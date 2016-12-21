@@ -1,10 +1,9 @@
 package main
 
 import (
-	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -42,7 +41,20 @@ type Config struct {
 	Token string
 }
 
+var org = flag.String("o", "", "github orginization")
+var repo = flag.String("r", "", "github repository")
+var check = flag.String("c", "top100", "Type of check to run (top100 (default), allcommits, apirates")
+
 func main() {
+	flag.Parse()
+
+	if *org == "" {
+		log.Fatal("need to specify an org")
+	}
+	if *repo == "" {
+		log.Fatal("need to specify an repo")
+	}
+
 	config := &Config{}
 	err := envconfig.Process("scrape", config)
 	if err != nil {
@@ -51,8 +63,6 @@ func main() {
 	if config.Token == "" {
 		log.Fatal("needs an access token")
 	}
-	fmt.Println(config.Token)
-	time.Sleep(time.Second * 5)
 
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: config.Token},
@@ -61,22 +71,25 @@ func main() {
 
 	client := github.NewClient(tc)
 
-	//top100()
-	getAllCommits(client)
-	//rateLimit(client)
-	//m := make(map[string]int)
-	//for _, i := range listContributors() {
-	//	//fmt.Println(i.Commit.Author.Name)
-	//	a := i.Login
-	//	_, ok := m[a]
-	//	if !ok {
-	//		m[a] = i.Contributions
-	//		continue
-	//	}
-	//	m[a] += 1
-	//}
-	//fmt.Println(m)
-	//top100()
+	switch *check {
+	case "top100":
+		top100(client)
+	case "allcommits":
+		getAllCommits(client)
+	case "apirates":
+		rateLimit(client)
+	default:
+		log.Fatal("not a valid check")
+	}
+}
+
+func rateLimit(client *github.Client) {
+	r, _, err := client.RateLimit()
+	if err != nil {
+		log.Printf("error getting rate: %v", err)
+		return
+	}
+	fmt.Printf("%d/%d\n", r.Remaining, r.Limit)
 }
 
 func checkAndAddEmail(e string, emails []string) bool {
@@ -95,15 +108,9 @@ func getAllCommits(client *github.Client) {
 		},
 	}
 
-	//var allCommits []*github.RepositoryCommit
 	m := make(map[string]*stat)
 	for {
-		commits, resp, err := client.Repositories.ListCommits("dmmcquay", "sqrl", opt)
-		//commits, resp, err := client.Repositories.ListCommits("kubernetes", "kubernetes", opt)
-		//commits, resp, err := client.Repositories.ListCommits("coreos", "dbtester", opt)
-		//commits, resp, err := client.Repositories.ListCommits("coreos", "dex", opt)
-		//commits, resp, err := client.Repositories.ListCommits("coreos", "torus", opt)
-		//commits, resp, err := client.Repositories.ListCommits("coreos", "rkt", opt)
+		commits, resp, err := client.Repositories.ListCommits(*org, *repo, opt)
 		if _, ok := err.(*github.RateLimitError); ok {
 			log.Println("hit rate limit")
 			return
@@ -131,7 +138,6 @@ func getAllCommits(client *github.Client) {
 				tmp.email = append(tmp.email, e)
 			}
 		}
-		//allCommits = append(allCommits, commits...)
 		if resp.NextPage == 0 {
 			break
 		}
@@ -148,67 +154,14 @@ func getAllCommits(client *github.Client) {
 	fmt.Printf("ATOTAL: %d\n", atotal)
 }
 
-func listContributors() contribs {
-	r, err := http.Get("https://api.github.com/repos/kubernetes/kubernetes/contributors")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if r.StatusCode != 200 {
-		log.Fatal("Unexpected status code", r.StatusCode)
-	}
-	defer r.Body.Close()
-
-	target := contribs{}
-
-	err = json.NewDecoder(r.Body).Decode(&target)
-	if err != nil {
-		log.Fatal("error parsing response: %v", err)
-	}
-	return target
-}
-
-func listCommits() commits {
-	r, err := http.Get("https://api.github.com/repos/kubernetes/kubernetes/commits")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if r.StatusCode != 200 {
-		log.Fatal("Unexpected status code", r.StatusCode)
-	}
-	defer r.Body.Close()
-
-	target := commits{}
-
-	err = json.NewDecoder(r.Body).Decode(&target)
-	if err != nil {
-		log.Fatal("error parsing response: %v", err)
-	}
-	return target
-}
-
-func rateLimit(client *github.Client) {
-	r, _, err := client.RateLimit()
-	if err != nil {
-		log.Printf("error getting rate: %v", err)
-		return
-	}
-	fmt.Printf("%d/%d\n", r.Remaining, r.Limit)
-}
-
 func top100(client *github.Client) {
-	//stats, _, err := client.Repositories.ListContributorsStats("dmmcquay", "sqrl")
-	stats, _, err := client.Repositories.ListContributorsStats("kubernetes", "kubernetes")
+	stats, _, err := client.Repositories.ListContributorsStats(*org, *repo)
 	if _, ok := err.(*github.RateLimitError); ok {
 		log.Println("hit rate limit")
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
-	//if _, ok := err.(*github.AcceptedError); ok {
-	//	log.Println("scheduled on GitHub side")
-	//}
 	fmt.Println(len(stats))
 	for _, i := range stats {
 		fmt.Printf(
