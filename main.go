@@ -10,6 +10,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/google/go-github/github"
+	"github.com/kelseyhightower/envconfig"
 )
 
 type commits []struct {
@@ -37,9 +38,24 @@ type stat struct {
 	commits int
 }
 
+type Config struct {
+	Token string
+}
+
 func main() {
+	config := &Config{}
+	err := envconfig.Process("scrape", config)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if config.Token == "" {
+		log.Fatal("needs an access token")
+	}
+	fmt.Println(config.Token)
+	time.Sleep(time.Second * 5)
+
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: "27e8ffceaaaab8310e5564bea7e8a028bc181f3e"},
+		&oauth2.Token{AccessToken: config.Token},
 	)
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 
