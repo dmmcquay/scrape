@@ -135,7 +135,7 @@ func main() {
 			fmt.Println("Please supply the repository using -repo option.")
 			return
 		}
-		getAllOpenPRs(client, *openPRsOrg, *openPRsRepo)
+		getPRs(client, *openPRsOrg, *openPRsRepo, "open")
 	}
 	if closedPRs.Parsed() {
 		if *closedPRsOrg == "" {
@@ -147,7 +147,7 @@ func main() {
 			fmt.Println("Please supply the repository using -repo option.")
 			return
 		}
-		getAllClosedPRs(client, *closedPRsOrg, *closedPRsRepo)
+		getPRs(client, *closedPRsOrg, *closedPRsRepo, "closed")
 	}
 }
 
@@ -169,8 +169,9 @@ func checkAndAddEmail(e string, emails []string) bool {
 	return false
 }
 
-func getAllOpenPRs(client *github.Client, org, repo string) {
+func getPRs(client *github.Client, org, repo, state string) {
 	opt := &github.PullRequestListOptions{
+		State: state,
 		ListOptions: github.ListOptions{
 			PerPage: 100,
 		},
@@ -205,58 +206,6 @@ func getAllOpenPRs(client *github.Client, org, repo string) {
 		opt.ListOptions.Page = resp.NextPage
 	}
 
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
-	fmt.Fprintln(w, "login\tcommits")
-
-	total := 0
-	atotal := len(m)
-	for _, v := range m {
-		total += v.Count
-		fmt.Fprintln(w, fmt.Sprintf("%s\t%d", v.Login, v.Count))
-	}
-	fmt.Fprintln(w)
-	w.Flush()
-	fmt.Printf("TOTAL COMMITS: %d\n", total)
-	fmt.Printf("TOTAL AUTHORS: %d\n", atotal)
-}
-
-func getAllClosedPRs(client *github.Client, org, repo string) {
-	opt := &github.PullRequestListOptions{
-		State: "closed",
-		ListOptions: github.ListOptions{
-			PerPage: 100,
-		},
-	}
-
-	m := make(map[string]*stat)
-	for {
-		prs, resp, err := client.PullRequests.List(org, repo, opt)
-		if _, ok := err.(*github.RateLimitError); ok {
-			log.Println("hit rate limit")
-			return
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, pr := range prs {
-			a := "username missing"
-			if pr.User != nil {
-				a = *pr.User.Login
-			}
-			_, ok := m[a]
-			if !ok {
-				m[a] = &stat{Login: a, Email: []string{}, Count: 1}
-				continue
-			}
-			tmp := m[a]
-			tmp.Count += 1
-		}
-		if resp.NextPage == 0 {
-			break
-		}
-		opt.ListOptions.Page = resp.NextPage
-	}
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
 	fmt.Fprintln(w, "login\tcommits")
