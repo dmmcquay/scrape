@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"text/tabwriter"
 
 	"golang.org/x/oauth2"
 
@@ -13,12 +14,25 @@ import (
 )
 
 type stat struct {
-	email []string
-	count int
+	Login string   `json:"login"`
+	Email []string `json:"email"`
+	Count int      `json:"count"`
 }
 
 type Config struct {
 	Token string
+}
+
+func (s stat) String() string {
+	if len(s.Email) < 3 {
+		return fmt.Sprintf("%s\t%v\t%d", s.Login, s.Email, s.Count)
+	}
+	return fmt.Sprintf(
+		"%s\t%v\t%d",
+		s.Login,
+		fmt.Sprintf("[%s [...] %s]", s.Email[0], s.Email[len(s.Email)-1]),
+		s.Count,
+	)
 }
 
 var apiRates = flag.NewFlagSet("apirates", flag.ExitOnError)
@@ -143,7 +157,7 @@ func rateLimit(client *github.Client) {
 		log.Printf("error getting rate: %v", err)
 		return
 	}
-	fmt.Printf("%d/%d\n", r.Remaining, r.Limit)
+	fmt.Printf("%d/%d requests\n", r.Remaining, r.Limit)
 }
 
 func checkAndAddEmail(e string, emails []string) bool {
@@ -179,26 +193,32 @@ func getAllOpenPRs(client *github.Client, org, repo string) {
 			}
 			_, ok := m[a]
 			if !ok {
-				m[a] = &stat{email: []string{}, count: 1}
+				m[a] = &stat{Login: a, Email: []string{}, Count: 1}
 				continue
 			}
 			tmp := m[a]
-			tmp.count += 1
+			tmp.Count += 1
 		}
 		if resp.NextPage == 0 {
 			break
 		}
 		opt.ListOptions.Page = resp.NextPage
 	}
+
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
+	fmt.Fprintln(w, "login\tcommits")
+
 	total := 0
-	atotal := 0
-	for k, v := range m {
-		total += v.count
-		atotal += 1
-		fmt.Printf("Author: %s count: %d\n", k, v.count)
+	atotal := len(m)
+	for _, v := range m {
+		total += v.Count
+		fmt.Fprintln(w, fmt.Sprintf("%s\t%d", v.Login, v.Count))
 	}
-	fmt.Printf("TOTAL: %d\n", total)
-	fmt.Printf("ATOTAL: %d\n", atotal)
+	fmt.Fprintln(w)
+	w.Flush()
+	fmt.Printf("TOTAL COMMITS: %d\n", total)
+	fmt.Printf("TOTAL AUTHORS: %d\n", atotal)
 }
 
 func getAllClosedPRs(client *github.Client, org, repo string) {
@@ -226,26 +246,31 @@ func getAllClosedPRs(client *github.Client, org, repo string) {
 			}
 			_, ok := m[a]
 			if !ok {
-				m[a] = &stat{email: []string{}, count: 1}
+				m[a] = &stat{Login: a, Email: []string{}, Count: 1}
 				continue
 			}
 			tmp := m[a]
-			tmp.count += 1
+			tmp.Count += 1
 		}
 		if resp.NextPage == 0 {
 			break
 		}
 		opt.ListOptions.Page = resp.NextPage
 	}
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
+	fmt.Fprintln(w, "login\tcommits")
+
 	total := 0
-	atotal := 0
-	for k, v := range m {
-		total += v.count
-		atotal += 1
-		fmt.Printf("Author: %s count: %d\n", k, v.count)
+	atotal := len(m)
+	for _, v := range m {
+		total += v.Count
+		fmt.Fprintln(w, fmt.Sprintf("%s\t%d", v.Login, v.Count))
 	}
-	fmt.Printf("TOTAL: %d\n", total)
-	fmt.Printf("ATOTAL: %d\n", atotal)
+	fmt.Fprintln(w)
+	w.Flush()
+	fmt.Printf("TOTAL COMMITS: %d\n", total)
+	fmt.Printf("TOTAL AUTHORS: %d\n", atotal)
 }
 
 func getAllCommits(client *github.Client, org, repo string) {
@@ -276,13 +301,13 @@ func getAllCommits(client *github.Client, org, repo string) {
 			}
 			_, ok := m[a]
 			if !ok {
-				m[a] = &stat{email: []string{e}, count: 1}
+				m[a] = &stat{Login: a, Email: []string{e}, Count: 1}
 				continue
 			}
 			tmp := m[a]
-			tmp.count += 1
-			if !checkAndAddEmail(e, tmp.email) {
-				tmp.email = append(tmp.email, e)
+			tmp.Count += 1
+			if !checkAndAddEmail(e, tmp.Email) {
+				tmp.Email = append(tmp.Email, e)
 			}
 		}
 		if resp.NextPage == 0 {
@@ -290,15 +315,20 @@ func getAllCommits(client *github.Client, org, repo string) {
 		}
 		opt.ListOptions.Page = resp.NextPage
 	}
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
+	fmt.Fprintln(w, "login\temails\tcommits")
+
 	total := 0
-	atotal := 0
-	for k, v := range m {
-		total += v.count
-		atotal += 1
-		fmt.Printf("Author: %s count: %v\n", k, v)
+	atotal := len(m)
+	for _, v := range m {
+		total += v.Count
+		fmt.Fprintln(w, v)
 	}
-	fmt.Printf("TOTAL: %d\n", total)
-	fmt.Printf("ATOTAL: %d\n", atotal)
+	fmt.Fprintln(w)
+	w.Flush()
+	fmt.Printf("TOTAL COMMITS: %d\n", total)
+	fmt.Printf("TOTAL AUTHORS: %d\n", atotal)
 }
 
 func top100(client *github.Client, org, repo string) {
@@ -309,12 +339,14 @@ func top100(client *github.Client, org, repo string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(len(stats))
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
+	fmt.Fprintln(w, "login\tcommits")
+
 	for _, i := range stats {
-		fmt.Printf(
-			"Author: %v commits: %v\n",
-			*i.Author.Login,
-			*i.Total,
-		)
+		fmt.Fprintln(w, fmt.Sprintf("%s\t%d", *i.Author.Login, *i.Total))
 	}
+	fmt.Fprintln(w)
+	w.Flush()
+	fmt.Printf("TOTAL TOP100 AUTHORS: %d\n", len(stats))
 }
