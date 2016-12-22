@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"time"
 
 	"golang.org/x/oauth2"
 
@@ -12,29 +11,9 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-type commits []struct {
-	Commit struct {
-		Author struct {
-			Name  string    `json:"name"`
-			Email string    `json:"email"`
-			Date  time.Time `json:"date"`
-		} `json:"author"`
-		Committer struct {
-			Name  string    `json:"name"`
-			Email string    `json:"email"`
-			Date  time.Time `json:"date"`
-		} `json:"committer"`
-	} `json:"commit"`
-}
-
-type contribs []struct {
-	Login         string `json:"login"`
-	Contributions int    `json:"contributions"`
-}
-
 type stat struct {
-	email   []string
-	commits int
+	email []string
+	count int
 }
 
 type Config struct {
@@ -78,6 +57,10 @@ func main() {
 		getAllCommits(client)
 	case "apirates":
 		rateLimit(client)
+	case "openprs":
+		getAllOpenPRs(client)
+	case "closedprs":
+		getAllClosedPRs(client)
 	default:
 		log.Fatal("not a valid check")
 	}
@@ -99,6 +82,99 @@ func checkAndAddEmail(e string, emails []string) bool {
 		}
 	}
 	return false
+}
+
+func getAllOpenPRs(client *github.Client) {
+	opt := &github.PullRequestListOptions{
+		ListOptions: github.ListOptions{
+			PerPage: 100,
+		},
+	}
+
+	m := make(map[string]*stat)
+	for {
+		prs, resp, err := client.PullRequests.List(*org, *repo, opt)
+		if _, ok := err.(*github.RateLimitError); ok {
+			log.Println("hit rate limit")
+			return
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, pr := range prs {
+			a := "username missing"
+			if pr.User != nil {
+				a = *pr.User.Login
+			}
+			_, ok := m[a]
+			if !ok {
+				m[a] = &stat{email: []string{}, count: 1}
+				continue
+			}
+			tmp := m[a]
+			tmp.count += 1
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.ListOptions.Page = resp.NextPage
+	}
+	total := 0
+	atotal := 0
+	for k, v := range m {
+		total += v.count
+		atotal += 1
+		fmt.Printf("Author: %s count: %d\n", k, v.count)
+	}
+	fmt.Printf("TOTAL: %d\n", total)
+	fmt.Printf("ATOTAL: %d\n", atotal)
+}
+
+func getAllClosedPRs(client *github.Client) {
+	opt := &github.PullRequestListOptions{
+		State: "closed",
+		ListOptions: github.ListOptions{
+			PerPage: 100,
+		},
+	}
+
+	m := make(map[string]*stat)
+	for {
+		prs, resp, err := client.PullRequests.List(*org, *repo, opt)
+		if _, ok := err.(*github.RateLimitError); ok {
+			log.Println("hit rate limit")
+			return
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, pr := range prs {
+			a := "username missing"
+			if pr.User != nil {
+				a = *pr.User.Login
+			}
+			_, ok := m[a]
+			if !ok {
+				m[a] = &stat{email: []string{}, count: 1}
+				continue
+			}
+			tmp := m[a]
+			tmp.count += 1
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.ListOptions.Page = resp.NextPage
+	}
+	total := 0
+	atotal := 0
+	for k, v := range m {
+		total += v.count
+		atotal += 1
+		fmt.Printf("Author: %s count: %d\n", k, v.count)
+	}
+	fmt.Printf("TOTAL: %d\n", total)
+	fmt.Printf("ATOTAL: %d\n", atotal)
 }
 
 func getAllCommits(client *github.Client) {
@@ -129,11 +205,11 @@ func getAllCommits(client *github.Client) {
 			}
 			_, ok := m[a]
 			if !ok {
-				m[a] = &stat{email: []string{e}, commits: 1}
+				m[a] = &stat{email: []string{e}, count: 1}
 				continue
 			}
 			tmp := m[a]
-			tmp.commits += 1
+			tmp.count += 1
 			if !checkAndAddEmail(e, tmp.email) {
 				tmp.email = append(tmp.email, e)
 			}
@@ -146,9 +222,9 @@ func getAllCommits(client *github.Client) {
 	total := 0
 	atotal := 0
 	for k, v := range m {
-		total += v.commits
+		total += v.count
 		atotal += 1
-		fmt.Printf("Author: %s Commits: %v\n", k, v)
+		fmt.Printf("Author: %s count: %v\n", k, v)
 	}
 	fmt.Printf("TOTAL: %d\n", total)
 	fmt.Printf("ATOTAL: %d\n", atotal)
