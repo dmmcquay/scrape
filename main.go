@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 
 	"golang.org/x/oauth2"
 
@@ -20,18 +21,50 @@ type Config struct {
 	Token string
 }
 
-var org = flag.String("o", "", "github orginization")
-var repo = flag.String("r", "", "github repository")
-var check = flag.String("c", "top100", "Type of check to run (top100 (default), allcommits, apirates")
+var apiRates = flag.NewFlagSet("apirates", flag.ExitOnError)
+
+var allCommits = flag.NewFlagSet("commits", flag.ExitOnError)
+var allCommitsOrg = allCommits.String("org", "", "github orginization")
+var allCommitsRepo = allCommits.String("repo", "", "github repository")
+
+var openPRs = flag.NewFlagSet("openprs", flag.ExitOnError)
+var openPRsOrg = openPRs.String("org", "", "github orginization")
+var openPRsRepo = openPRs.String("repo", "", "github repository")
+
+var closedPRs = flag.NewFlagSet("closedprs", flag.ExitOnError)
+var closedPRsOrg = closedPRs.String("org", "", "github orginization")
+var closedPRsRepo = closedPRs.String("repo", "", "github repository")
+
+var top = flag.NewFlagSet("top100", flag.ExitOnError)
+var topOrg = top.String("org", "", "github orginization")
+var topRepo = top.String("repo", "", "github repository")
 
 func main() {
-	flag.Parse()
-
-	if *org == "" {
-		log.Fatal("need to specify an org")
+	if len(os.Args) == 1 {
+		fmt.Println("usage: scrape <command> [<args>]")
+		fmt.Println("The scrape commands are: ")
+		fmt.Println(" top100     See top 100 commiters to project")
+		fmt.Println(" commits    See all user's commits to project")
+		fmt.Println(" apirates   See current used api requests/total")
+		fmt.Println(" openprs    See all open PRs to project")
+		fmt.Println(" closedprs  See all closed PRs to project")
+		return
 	}
-	if *repo == "" {
-		log.Fatal("need to specify an repo")
+
+	switch os.Args[1] {
+	case "apirates":
+		apiRates.Parse(os.Args[2:])
+	case "commits":
+		allCommits.Parse(os.Args[2:])
+	case "openprs":
+		openPRs.Parse(os.Args[2:])
+	case "closedprs":
+		closedPRs.Parse(os.Args[2:])
+	case "top100":
+		top.Parse(os.Args[2:])
+	default:
+		fmt.Printf("%q is not valid command.\n", os.Args[1])
+		os.Exit(2)
 	}
 
 	config := &Config{}
@@ -40,7 +73,8 @@ func main() {
 		log.Fatal(err)
 	}
 	if config.Token == "" {
-		log.Fatal("needs an access token")
+		fmt.Println("scrape requires SCRAPE_TOKEN env variable to be defined with valid access token")
+		os.Exit(3)
 	}
 
 	ts := oauth2.StaticTokenSource(
@@ -50,19 +84,56 @@ func main() {
 
 	client := github.NewClient(tc)
 
-	switch *check {
-	case "top100":
-		top100(client)
-	case "allcommits":
-		getAllCommits(client)
-	case "apirates":
+	if apiRates.Parsed() {
 		rateLimit(client)
-	case "openprs":
-		getAllOpenPRs(client)
-	case "closedprs":
-		getAllClosedPRs(client)
-	default:
-		log.Fatal("not a valid check")
+	}
+	if allCommits.Parsed() {
+		if *allCommitsOrg == "" {
+			fmt.Println("Please supply the orginization using -org option.")
+			return
+		}
+
+		if *allCommitsRepo == "" {
+			fmt.Println("Please supply the repository using -repo option.")
+			return
+		}
+		getAllCommits(client, *allCommitsOrg, *allCommitsRepo)
+	}
+	if top.Parsed() {
+		if *topOrg == "" {
+			fmt.Println("Please supply the orginization using -org option.")
+			return
+		}
+
+		if *topRepo == "" {
+			fmt.Println("Please supply the repository using -repo option.")
+			return
+		}
+		top100(client, *topOrg, *topRepo)
+	}
+	if openPRs.Parsed() {
+		if *openPRsOrg == "" {
+			fmt.Println("Please supply the orginization using -org option.")
+			return
+		}
+
+		if *openPRsRepo == "" {
+			fmt.Println("Please supply the repository using -repo option.")
+			return
+		}
+		getAllOpenPRs(client, *openPRsOrg, *openPRsRepo)
+	}
+	if closedPRs.Parsed() {
+		if *closedPRsOrg == "" {
+			fmt.Println("Please supply the orginization using -org option.")
+			return
+		}
+
+		if *closedPRsRepo == "" {
+			fmt.Println("Please supply the repository using -repo option.")
+			return
+		}
+		getAllClosedPRs(client, *closedPRsOrg, *closedPRsRepo)
 	}
 }
 
@@ -84,7 +155,7 @@ func checkAndAddEmail(e string, emails []string) bool {
 	return false
 }
 
-func getAllOpenPRs(client *github.Client) {
+func getAllOpenPRs(client *github.Client, org, repo string) {
 	opt := &github.PullRequestListOptions{
 		ListOptions: github.ListOptions{
 			PerPage: 100,
@@ -93,7 +164,7 @@ func getAllOpenPRs(client *github.Client) {
 
 	m := make(map[string]*stat)
 	for {
-		prs, resp, err := client.PullRequests.List(*org, *repo, opt)
+		prs, resp, err := client.PullRequests.List(org, repo, opt)
 		if _, ok := err.(*github.RateLimitError); ok {
 			log.Println("hit rate limit")
 			return
@@ -130,7 +201,7 @@ func getAllOpenPRs(client *github.Client) {
 	fmt.Printf("ATOTAL: %d\n", atotal)
 }
 
-func getAllClosedPRs(client *github.Client) {
+func getAllClosedPRs(client *github.Client, org, repo string) {
 	opt := &github.PullRequestListOptions{
 		State: "closed",
 		ListOptions: github.ListOptions{
@@ -140,7 +211,7 @@ func getAllClosedPRs(client *github.Client) {
 
 	m := make(map[string]*stat)
 	for {
-		prs, resp, err := client.PullRequests.List(*org, *repo, opt)
+		prs, resp, err := client.PullRequests.List(org, repo, opt)
 		if _, ok := err.(*github.RateLimitError); ok {
 			log.Println("hit rate limit")
 			return
@@ -177,7 +248,7 @@ func getAllClosedPRs(client *github.Client) {
 	fmt.Printf("ATOTAL: %d\n", atotal)
 }
 
-func getAllCommits(client *github.Client) {
+func getAllCommits(client *github.Client, org, repo string) {
 	opt := &github.CommitsListOptions{
 		ListOptions: github.ListOptions{
 			PerPage: 100,
@@ -186,7 +257,7 @@ func getAllCommits(client *github.Client) {
 
 	m := make(map[string]*stat)
 	for {
-		commits, resp, err := client.Repositories.ListCommits(*org, *repo, opt)
+		commits, resp, err := client.Repositories.ListCommits(org, repo, opt)
 		if _, ok := err.(*github.RateLimitError); ok {
 			log.Println("hit rate limit")
 			return
@@ -230,8 +301,8 @@ func getAllCommits(client *github.Client) {
 	fmt.Printf("ATOTAL: %d\n", atotal)
 }
 
-func top100(client *github.Client) {
-	stats, _, err := client.Repositories.ListContributorsStats(*org, *repo)
+func top100(client *github.Client, org, repo string) {
+	stats, _, err := client.Repositories.ListContributorsStats(org, repo)
 	if _, ok := err.(*github.RateLimitError); ok {
 		log.Println("hit rate limit")
 	}
