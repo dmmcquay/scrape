@@ -28,21 +28,43 @@ would be for this repository where Org is dmmcquay and Repo is scrape.
 
 ## scrape top100
 
-running `scrape top100 -org foo -repo bar` will return a list of the top 100 
-contributors to repository.
+running: 
+
+```
+scrape top100 -org foo -repo bar
+``` 
+
+will return a list of the top 100 contributors to repository.
 
 ## scrape commits
 
-running `scrape commits -org foo -repo bar` will return a list of all contributors 
-and a total count of commits for specified repository.
+running:
+
+```
+scrape commits -org foo -repo bar
+```
+
+will return a list of all contributors and a total count of commits for 
+specified repository.
 
 ## scrape openprs
 
-running `scrape openprs -org foo -repo bar` will return a list of all contributors
-and a total count of open PRs they have for the specified repository.
+running:
+
+```
+scrape openprs -org foo -repo bar
+``` 
+
+will return a list of all contributors and a total count of open PRs they have 
+for the specified repository.
 
 ## scrape closedprs
 
-running `scrape closedprs -org foo -repo bar` will return a list of all contributors
-and a total count of closed PRs they have for the specified repository.
+running:
+
+```
+scrape closedprs -org foo -repo bar
+``` 
+will return a list of all contributors and a total count of closed PRs they 
+have for the specified repository.
 
