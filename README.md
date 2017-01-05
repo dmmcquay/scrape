@@ -7,7 +7,7 @@ Scrape is a simple CLI tool to help Gather data from github repos about contribu
 # Getting Started
 If you have a working Go enviroment on your computer, you can download it by running:
 
-`go get -u github.com/geckoboard/prism`.
+`go get -u github.com/dmmcquay/scrape`.
 
 # Usage
 
