@@ -208,7 +208,7 @@ func getPRs(client *github.Client, org, repo, state string) {
 
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
-	fmt.Fprintln(w, "login\tcommits")
+	fmt.Fprintln(w, "login\tPRs")
 
 	total := 0
 	atotal := len(m)
@@ -218,7 +218,7 @@ func getPRs(client *github.Client, org, repo, state string) {
 	}
 	fmt.Fprintln(w)
 	w.Flush()
-	fmt.Printf("TOTAL COMMITS: %d\n", total)
+	fmt.Printf("TOTAL PRs: %d\n", total)
 	fmt.Printf("TOTAL AUTHORS: %d\n", atotal)
 }
 
