@@ -1,0 +1,43 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "WsQM7/GEq4355WFQ4FMjutGnvNU=",
+			"path": "github.com/google/go-github/github",
+			"revision": "3e246d29992beb5a5d2fc253adebea86997c45b0",
+			"revisionTime": "2016-09-22T19:31:51Z"
+		},
+		{
+			"checksumSHA1": "yyAzHoiVLu+xywYI2BDyRq6sOqE=",
+			"path": "github.com/google/go-querystring/query",
+			"revision": "9235644dd9e52eeae6fa48efd539fdc351a0af53",
+			"revisionTime": "2016-03-11T01:20:12Z"
+		},
+		{
+			"checksumSHA1": "6I9mImOHbYFvZm9pdOsQVO6yEcI=",
+			"path": "github.com/kelseyhightower/envconfig",
+			"revision": "9aca109c9aec4633fced9717c4a09ecab3d33111",
+			"revisionTime": "2016-10-19T16:24:55Z"
+		},
+		{
+			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
+			"path": "golang.org/x/net/context",
+			"revision": "daba796358cd2742b75aae05761f1b898c9f6a5c",
+			"revisionTime": "2016-10-20T03:26:43Z"
+		},
+		{
+			"checksumSHA1": "XH7CgbL5Z8COUc+MKrYqS3FFosY=",
+			"path": "golang.org/x/oauth2",
+			"revision": "d5040cddfc0da40b408c9a1da4728662435176a9",
+			"revisionTime": "2016-11-03T22:50:36Z"
+		},
+		{
+			"checksumSHA1": "D3v/aqfB9swlaZcSksCoF+lbOqo=",
+			"path": "golang.org/x/oauth2/internal",
+			"revision": "d5040cddfc0da40b408c9a1da4728662435176a9",
+			"revisionTime": "2016-11-03T22:50:36Z"
+		}
+	],
+	"rootPath": "github.com/dmmcquay/scrape"
+}
