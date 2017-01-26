@@ -290,10 +290,10 @@ func top100(client *github.Client, org, repo string) {
 	}
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
-	fmt.Fprintln(w, "login\tcommits")
+	fmt.Fprintln(w, "rank\tlogin\tcommits")
 
-	for _, i := range stats {
-		fmt.Fprintln(w, fmt.Sprintf("%s\t%d", *i.Author.Login, *i.Total))
+	for n, i := range stats {
+		fmt.Fprintln(w, fmt.Sprintf("%d\t%s\t%d", (100-n), *i.Author.Login, *i.Total))
 	}
 	fmt.Fprintln(w)
 	w.Flush()
