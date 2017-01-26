@@ -213,13 +213,19 @@ func getPRs(client *github.Client, org, repo, state string) {
 		opt.ListOptions.Page = resp.NextPage
 	}
 
+	b := byCount{}
+	for _, v := range m {
+		b = append(b, *v)
+	}
+	sort.Sort(b)
+
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
 	fmt.Fprintln(w, "login\tPRs")
 
 	total := 0
 	atotal := len(m)
-	for _, v := range m {
+	for _, v := range b {
 		total += v.Count
 		fmt.Fprintln(w, fmt.Sprintf("%s\t%d", v.Login, v.Count))
 	}
@@ -271,19 +277,19 @@ func getAllCommits(client *github.Client, org, repo string) {
 		}
 		opt.ListOptions.Page = resp.NextPage
 	}
+
+	b := byCount{}
+	for _, v := range m {
+		b = append(b, *v)
+	}
+	sort.Sort(b)
+
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
 	fmt.Fprintln(w, "login\temails\tcommits")
 
 	total := 0
 	atotal := len(m)
-
-	b := byCount{}
-	for _, v := range m {
-		b = append(b, *v)
-	}
-
-	sort.Sort(b)
 
 	for _, v := range b {
 		total += v.Count
