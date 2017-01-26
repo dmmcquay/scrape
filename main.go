@@ -290,7 +290,6 @@ func getAllCommits(client *github.Client, org, repo string) {
 
 	total := 0
 	atotal := len(m)
-
 	for _, v := range b {
 		total += v.Count
 		fmt.Fprintln(w, v)
