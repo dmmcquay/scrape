@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"text/tabwriter"
 
 	"golang.org/x/oauth2"
@@ -18,6 +19,12 @@ type stat struct {
 	Email []string `json:"email"`
 	Count int      `json:"count"`
 }
+
+type byCount []stat
+
+func (s byCount) Len() int           { return len(s) }
+func (s byCount) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s byCount) Less(i, j int) bool { return s[i].Count < s[j].Count }
 
 type Config struct {
 	Token string
@@ -270,7 +277,15 @@ func getAllCommits(client *github.Client, org, repo string) {
 
 	total := 0
 	atotal := len(m)
+
+	b := byCount{}
 	for _, v := range m {
+		b = append(b, *v)
+	}
+
+	sort.Sort(b)
+
+	for _, v := range b {
 		total += v.Count
 		fmt.Fprintln(w, v)
 	}
