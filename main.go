@@ -18,6 +18,7 @@ type stat struct {
 	Login string   `json:"login"`
 	Email []string `json:"email"`
 	Count int      `json:"count"`
+	Rank  int      `json:"rank"`
 }
 
 type byCount []stat
@@ -32,10 +33,11 @@ type Config struct {
 
 func (s stat) String() string {
 	if len(s.Email) < 3 {
-		return fmt.Sprintf("%s\t%v\t%d", s.Login, s.Email, s.Count)
+		return fmt.Sprintf("%d\t%s\t%v\t%d", s.Rank, s.Login, s.Email, s.Count)
 	}
 	return fmt.Sprintf(
-		"%s\t%v\t%d",
+		"%d\t%s\t%v\t%d",
+		s.Rank,
 		s.Login,
 		fmt.Sprintf("[%s [...] %s]", s.Email[0], s.Email[len(s.Email)-1]),
 		s.Count,
@@ -221,13 +223,14 @@ func getPRs(client *github.Client, org, repo, state string) {
 
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
-	fmt.Fprintln(w, "login\tPRs")
+	fmt.Fprintln(w, "rank\tlogin\tPRs")
 
 	total := 0
 	atotal := len(m)
-	for _, v := range b {
+	for n, v := range b {
 		total += v.Count
-		fmt.Fprintln(w, fmt.Sprintf("%s\t%d", v.Login, v.Count))
+		v.Rank = atotal - n
+		fmt.Fprintln(w, fmt.Sprintf("%d\t%s\t%d", v.Rank, v.Login, v.Count))
 	}
 	fmt.Fprintln(w)
 	w.Flush()
@@ -286,12 +289,13 @@ func getAllCommits(client *github.Client, org, repo string) {
 
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
-	fmt.Fprintln(w, "login\temails\tcommits")
+	fmt.Fprintln(w, "rank\tlogin\temails\tcommits")
 
 	total := 0
 	atotal := len(m)
-	for _, v := range b {
+	for n, v := range b {
 		total += v.Count
+		v.Rank = atotal - n
 		fmt.Fprintln(w, v)
 	}
 	fmt.Fprintln(w)
