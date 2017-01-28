@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-github/github"
 )
 
+// Top100 prints to stdout the top100 contributors to organization's
+// repository
 func Top100(client *github.Client, org, repo string) {
 	stats, _, err := client.Repositories.ListContributorsStats(org, repo)
 	if _, ok := err.(*github.RateLimitError); ok {

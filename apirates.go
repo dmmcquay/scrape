@@ -7,6 +7,7 @@ import (
 	"github.com/google/go-github/github"
 )
 
+// RateLimit prints to stdout number of api request remaining
 func RateLimit(client *github.Client) {
 	r, _, err := client.RateLimit()
 	if err != nil {

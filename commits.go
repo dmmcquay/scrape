@@ -19,6 +19,8 @@ func checkAndAddEmail(e string, emails []string) bool {
 	return false
 }
 
+// GetAllCommits prints to stdout a sorted list of all commits to a
+// specified organization's repository
 func GetAllCommits(client *github.Client, org, repo string) {
 	opt := &github.CommitsListOptions{
 		ListOptions: github.ListOptions{

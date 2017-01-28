@@ -10,6 +10,8 @@ import (
 	"github.com/google/go-github/github"
 )
 
+// GetPRs prints to stdout a sorted list of either closed or open PRs to
+// specified organization's repository
 func GetPRs(client *github.Client, org, repo, state string) {
 	opt := &github.PullRequestListOptions{
 		State: state,
