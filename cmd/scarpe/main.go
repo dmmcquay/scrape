@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/dmmcquay/scrape"
 	"github.com/google/go-github/github"
 	"github.com/kelseyhightower/envconfig"
 )
@@ -132,7 +133,7 @@ func main() {
 			fmt.Println("Please supply the repository using -repo option.")
 			return
 		}
-		top100(client, *topOrg, *topRepo)
+		scrape.Top100(client, *topOrg, *topRepo)
 	}
 	if openPRs.Parsed() {
 		if *openPRsOrg == "" {
@@ -158,15 +159,6 @@ func main() {
 		}
 		getPRs(client, *closedPRsOrg, *closedPRsRepo, "closed")
 	}
-}
-
-func rateLimit(client *github.Client) {
-	r, _, err := client.RateLimit()
-	if err != nil {
-		log.Printf("error getting rate: %v", err)
-		return
-	}
-	fmt.Printf("%d/%d requests\n", r.Remaining, r.Limit)
 }
 
 func checkAndAddEmail(e string, emails []string) bool {
@@ -302,24 +294,4 @@ func getAllCommits(client *github.Client, org, repo string) {
 	w.Flush()
 	fmt.Printf("TOTAL COMMITS: %d\n", total)
 	fmt.Printf("TOTAL AUTHORS: %d\n", atotal)
-}
-
-func top100(client *github.Client, org, repo string) {
-	stats, _, err := client.Repositories.ListContributorsStats(org, repo)
-	if _, ok := err.(*github.RateLimitError); ok {
-		log.Println("hit rate limit")
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	w := new(tabwriter.Writer)
-	w.Init(os.Stdout, 10, 8, 0, '\t', 0)
-	fmt.Fprintln(w, "rank\tlogin\tcommits")
-
-	for n, i := range stats {
-		fmt.Fprintln(w, fmt.Sprintf("%d\t%s\t%d", (100-n), *i.Author.Login, *i.Total))
-	}
-	fmt.Fprintln(w)
-	w.Flush()
-	fmt.Printf("TOTAL TOP100 AUTHORS: %d\n", len(stats))
 }
