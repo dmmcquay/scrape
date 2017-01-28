@@ -1,4 +1,7 @@
 # Scrape
+
+[![GoDoc](https://godoc.org/github.com/dmmcquay/scrape?status.svg)](https://godoc.org/github.com/dmmcquay/scrape)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dmmcquay/scrape)](https://goreportcard.com/report/github.com/dmmcquay/scrape)
  
 # Overview
 
