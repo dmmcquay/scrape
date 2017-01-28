@@ -13,34 +13,8 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-type stat struct {
-	Login string   `json:"login"`
-	Email []string `json:"email"`
-	Count int      `json:"count"`
-	Rank  int      `json:"rank"`
-}
-
-type byCount []stat
-
-func (s byCount) Len() int           { return len(s) }
-func (s byCount) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s byCount) Less(i, j int) bool { return s[i].Count < s[j].Count }
-
 type Config struct {
 	Token string
-}
-
-func (s stat) String() string {
-	if len(s.Email) < 3 {
-		return fmt.Sprintf("%d\t%s\t%v\t%d", s.Rank, s.Login, s.Email, s.Count)
-	}
-	return fmt.Sprintf(
-		"%d\t%s\t%v\t%d",
-		s.Rank,
-		s.Login,
-		fmt.Sprintf("[%s [...] %s]", s.Email[0], s.Email[len(s.Email)-1]),
-		s.Count,
-	)
 }
 
 var apiRates = flag.NewFlagSet("apirates", flag.ExitOnError)
@@ -107,7 +81,7 @@ func main() {
 	client := github.NewClient(tc)
 
 	if apiRates.Parsed() {
-		rateLimit(client)
+		scrape.RateLimit(client)
 	}
 	if allCommits.Parsed() {
 		if *allCommitsOrg == "" {
@@ -119,7 +93,7 @@ func main() {
 			fmt.Println("Please supply the repository using -repo option.")
 			return
 		}
-		getAllCommits(client, *allCommitsOrg, *allCommitsRepo)
+		scrape.GetAllCommits(client, *allCommitsOrg, *allCommitsRepo)
 	}
 	if top.Parsed() {
 		if *topOrg == "" {
@@ -143,7 +117,7 @@ func main() {
 			fmt.Println("Please supply the repository using -repo option.")
 			return
 		}
-		getPRs(client, *openPRsOrg, *openPRsRepo, "open")
+		scrape.GetPRs(client, *openPRsOrg, *openPRsRepo, "open")
 	}
 	if closedPRs.Parsed() {
 		if *closedPRsOrg == "" {
@@ -155,6 +129,6 @@ func main() {
 			fmt.Println("Please supply the repository using -repo option.")
 			return
 		}
-		getPRs(client, *closedPRsOrg, *closedPRsRepo, "closed")
+		scrape.GetPRs(client, *closedPRsOrg, *closedPRsRepo, "closed")
 	}
 }
