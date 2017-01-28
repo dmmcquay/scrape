@@ -13,7 +13,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-type Config struct {
+type config struct {
 	Token string
 }
 
@@ -63,7 +63,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	config := &Config{}
+	config := &config{}
 	err := envconfig.Process("scrape", config)
 	if err != nil {
 		log.Fatal(err)
