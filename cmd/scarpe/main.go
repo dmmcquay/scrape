@@ -82,53 +82,34 @@ func main() {
 
 	if apiRates.Parsed() {
 		scrape.RateLimit(client)
+		return
 	}
+	missingRepo()
+	missingOrg()
 	if allCommits.Parsed() {
-		if *allCommitsOrg == "" {
-			fmt.Println("Please supply the orginization using -org option.")
-			return
-		}
-
-		if *allCommitsRepo == "" {
-			fmt.Println("Please supply the repository using -repo option.")
-			return
-		}
 		scrape.GetAllCommits(client, *allCommitsOrg, *allCommitsRepo)
 	}
 	if top.Parsed() {
-		if *topOrg == "" {
-			fmt.Println("Please supply the orginization using -org option.")
-			return
-		}
-
-		if *topRepo == "" {
-			fmt.Println("Please supply the repository using -repo option.")
-			return
-		}
 		scrape.Top100(client, *topOrg, *topRepo)
 	}
 	if openPRs.Parsed() {
-		if *openPRsOrg == "" {
-			fmt.Println("Please supply the orginization using -org option.")
-			return
-		}
-
-		if *openPRsRepo == "" {
-			fmt.Println("Please supply the repository using -repo option.")
-			return
-		}
 		scrape.GetPRs(client, *openPRsOrg, *openPRsRepo, "open")
 	}
 	if closedPRs.Parsed() {
-		if *closedPRsOrg == "" {
-			fmt.Println("Please supply the orginization using -org option.")
-			return
-		}
-
-		if *closedPRsRepo == "" {
-			fmt.Println("Please supply the repository using -repo option.")
-			return
-		}
 		scrape.GetPRs(client, *closedPRsOrg, *closedPRsRepo, "closed")
+	}
+}
+
+func missingRepo() {
+	if *closedPRsRepo == "" {
+		fmt.Println("Please supply the repository using -repo option.")
+		return
+	}
+}
+
+func missingOrg() {
+	if *allCommitsOrg == "" {
+		fmt.Println("Please supply the orginization using -org option.")
+		return
 	}
 }
