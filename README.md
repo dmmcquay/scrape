@@ -27,14 +27,15 @@ have the token, please set the env variable `SCRAPE_TOKEN` to the access token.
 ## Org and Repo
 
 The following commands all require an org and Repo to be specified. An example 
-would be for this repository where Org is dmmcquay and Repo is scrape.
+would be for this repository where Org is dmmcquay and Repo is scrape. The format
+for this would be `dmmcquay/scrape` 
 
 ## scrape top100
 
 running: 
 
 ```
-scrape top100 -org foo -repo bar
+scrape top100 foo/bar
 ``` 
 
 will return a list of the top 100 contributors to repository.
@@ -44,7 +45,7 @@ will return a list of the top 100 contributors to repository.
 running:
 
 ```
-scrape commits -org foo -repo bar
+scrape commits foo/bar
 ```
 
 will return a list of all contributors and a total count of commits for 
@@ -55,7 +56,7 @@ specified repository.
 running:
 
 ```
-scrape openprs -org foo -repo bar
+scrape openprs foo/bar
 ``` 
 
 will return a list of all contributors and a total count of open PRs they have 
@@ -66,7 +67,7 @@ for the specified repository.
 running:
 
 ```
-scrape closedprs -org foo -repo bar
+scrape closedprs foo/bar
 ``` 
 will return a list of all contributors and a total count of closed PRs they 
 have for the specified repository.
