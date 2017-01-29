@@ -9,10 +9,10 @@ import (
 
 // RateLimit prints to stdout number of api request remaining
 func RateLimit(client *github.Client) {
-	r, _, err := client.RateLimit()
+	r, _, err := client.RateLimits()
 	if err != nil {
 		log.Printf("error getting rate: %v", err)
 		return
 	}
-	fmt.Printf("%d/%d requests\n", r.Remaining, r.Limit)
+	fmt.Printf("%d/%d requests\n", r.Core.Remaining, r.Core.Limit)
 }
