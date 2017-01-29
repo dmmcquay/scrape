@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"golang.org/x/oauth2"
 
@@ -18,26 +19,14 @@ type config struct {
 }
 
 var apiRates = flag.NewFlagSet("apirates", flag.ExitOnError)
-
 var allCommits = flag.NewFlagSet("commits", flag.ExitOnError)
-var allCommitsOrg = allCommits.String("org", "", "github orginization")
-var allCommitsRepo = allCommits.String("repo", "", "github repository")
-
 var openPRs = flag.NewFlagSet("openprs", flag.ExitOnError)
-var openPRsOrg = openPRs.String("org", "", "github orginization")
-var openPRsRepo = openPRs.String("repo", "", "github repository")
-
 var closedPRs = flag.NewFlagSet("closedprs", flag.ExitOnError)
-var closedPRsOrg = closedPRs.String("org", "", "github orginization")
-var closedPRsRepo = closedPRs.String("repo", "", "github repository")
-
 var top = flag.NewFlagSet("top100", flag.ExitOnError)
-var topOrg = top.String("org", "", "github orginization")
-var topRepo = top.String("repo", "", "github repository")
 
 func main() {
-	if len(os.Args) == 1 {
-		fmt.Println("usage: scrape <command> [<args>]")
+	if len(os.Args) != 3 {
+		fmt.Println("usage: scrape <command> org/repo")
 		fmt.Println("The scrape commands are: ")
 		fmt.Println(" top100     See top 100 commiters to project")
 		fmt.Println(" commits    See all user's commits to project")
@@ -63,6 +52,13 @@ func main() {
 		os.Exit(2)
 	}
 
+	ro := strings.Split(os.Args[2], "/")
+	if len(ro) != 2 {
+		fmt.Println("poorly formated org/repo")
+		return
+	}
+	org, repo := ro[0], ro[1]
+
 	config := &config{}
 	err := envconfig.Process("scrape", config)
 	if err != nil {
@@ -84,32 +80,35 @@ func main() {
 		scrape.RateLimit(client)
 		return
 	}
-	missingRepo()
-	missingOrg()
+	if missingOrg(org) || missingRepo(repo) {
+		return
+	}
 	if allCommits.Parsed() {
-		scrape.GetAllCommits(client, *allCommitsOrg, *allCommitsRepo)
+		scrape.GetAllCommits(client, org, repo)
 	}
 	if top.Parsed() {
-		scrape.Top100(client, *topOrg, *topRepo)
+		scrape.Top100(client, org, repo)
 	}
 	if openPRs.Parsed() {
-		scrape.GetPRs(client, *openPRsOrg, *openPRsRepo, "open")
+		scrape.GetPRs(client, org, repo, "open")
 	}
 	if closedPRs.Parsed() {
-		scrape.GetPRs(client, *closedPRsOrg, *closedPRsRepo, "closed")
+		scrape.GetPRs(client, org, repo, "closed")
 	}
 }
 
-func missingRepo() {
-	if *closedPRsRepo == "" {
+func missingRepo(repo string) bool {
+	if repo == "" {
 		fmt.Println("Please supply the repository using -repo option.")
-		return
+		return true
 	}
+	return false
 }
 
-func missingOrg() {
-	if *allCommitsOrg == "" {
+func missingOrg(org string) bool {
+	if org == "" {
 		fmt.Println("Please supply the orginization using -org option.")
-		return
+		return true
 	}
+	return false
 }
