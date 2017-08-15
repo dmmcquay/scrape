@@ -1,11 +1,13 @@
 package scrape
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"sort"
 	"text/tabwriter"
+	"time"
 
 	"github.com/google/go-github/github"
 )
@@ -30,7 +32,9 @@ func GetAllCommits(client *github.Client, org, repo string) {
 
 	m := make(map[string]*stat)
 	for {
-		commits, resp, err := client.Repositories.ListCommits(org, repo, opt)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		commits, resp, err := client.Repositories.ListCommits(ctx, org, repo, opt)
 		if _, ok := err.(*github.RateLimitError); ok {
 			log.Println("hit rate limit")
 			return

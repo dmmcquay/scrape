@@ -1,10 +1,12 @@
 package scrape
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"text/tabwriter"
+	"time"
 
 	"github.com/google/go-github/github"
 )
@@ -12,7 +14,9 @@ import (
 // Top100 prints to stdout the top100 contributors to organization's
 // repository
 func Top100(client *github.Client, org, repo string) {
-	stats, _, err := client.Repositories.ListContributorsStats(org, repo)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	stats, _, err := client.Repositories.ListContributorsStats(ctx, org, repo)
 	if _, ok := err.(*github.RateLimitError); ok {
 		log.Println("hit rate limit")
 	}
